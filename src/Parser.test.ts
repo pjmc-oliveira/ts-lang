@@ -1,7 +1,15 @@
-import { Token } from "./Lexer"
-import { parse } from "./Parser"
-import { Apply, Binding, Bool, If, Lambda, Let, Var, Num } from "./Expr";
-
+import { Token } from './Lexer'
+import { parse } from './Parser'
+import {
+  Application,
+  Binding,
+  Bool,
+  If,
+  Lambda,
+  Let,
+  Var,
+  Num,
+} from './Expr'
 
 describe('Parser', () => {
   it('parses an empty list', () => {
@@ -36,9 +44,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Var('x')
-    )
+    expect(expr).toEqual(new Var('x'))
   })
 
   it('parses a number expression', () => {
@@ -50,9 +56,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Num(123)
-    )
+    expect(expr).toEqual(new Num(123))
   })
 
   it('parses a true boolean expression', () => {
@@ -64,9 +68,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Bool(true)
-    )
+    expect(expr).toEqual(new Bool(true))
   })
 
   it('parses a false boolean expression', () => {
@@ -78,9 +80,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Bool(false)
-    )
+    expect(expr).toEqual(new Bool(false))
   })
 
   it('parses an if expression', () => {
@@ -93,16 +93,12 @@ describe('Parser', () => {
       Token.Then,
       Token.Num(123),
       Token.Else,
-      Token.Var('x')
+      Token.Var('x'),
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
     expect(expr).toEqual(
-      new If(
-        new Bool(true),
-        new Num(123),
-        new Var('x')
-      )
+      new If(new Bool(true), new Num(123), new Var('x')),
     )
   })
 
@@ -120,13 +116,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Let(
-        'x',
-        new Bool(true),
-        new Num(123)
-      )
-    )
+    expect(expr).toEqual(new Let('x', new Bool(true), new Num(123)))
   })
 
   it('parses a lambda expression', () => {
@@ -140,12 +130,7 @@ describe('Parser', () => {
     ]
     const bindings = parse(tokens)
     const expr = bindings[0].expr
-    expect(expr).toEqual(
-      new Lambda(
-        'x',
-        new Num(123)
-      )
-    )
+    expect(expr).toEqual(new Lambda('x', new Num(123)))
   })
 
   it('parses function application', () => {
@@ -161,16 +146,13 @@ describe('Parser', () => {
     const bindings = parse(tokens)
     const expr = bindings[0].expr
     expect(expr).toEqual(
-      new Apply(
-        new Apply(
-          new Apply(
-            new Var('f'),
-            new Var('x')
-          ),
-          new Var('y')
+      new Application(
+        new Application(
+          new Application(new Var('f'), new Var('x')),
+          new Var('y'),
         ),
-        new Var('z')
-      )
+        new Var('z'),
+      ),
     )
   })
 
@@ -187,13 +169,7 @@ describe('Parser', () => {
     const bindings = parse(tokens)
     const expr = bindings[0].expr
     expect(expr).toEqual(
-      new Apply(
-        new Var('f'),
-        new Lambda(
-          'x',
-          new Var('x')
-        )
-      )
+      new Application(new Var('f'), new Lambda('x', new Var('x'))),
     )
   })
 
@@ -211,13 +187,10 @@ describe('Parser', () => {
     const bindings = parse(tokens)
     const expr = bindings[0].expr
     expect(expr).toEqual(
-      new Apply(
+      new Application(
         new Var('f'),
-        new Apply(
-          new Var('g'),
-          new Var('x')
-        )
-      )
+        new Application(new Var('g'), new Var('x')),
+      ),
     )
   })
 })

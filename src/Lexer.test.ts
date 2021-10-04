@@ -1,4 +1,4 @@
-import { tokenize, Token } from "./Lexer";
+import { tokenize, Token } from './Lexer'
 
 describe('Lexer', () => {
   it('tokenizes single tokens', () => {
@@ -34,33 +34,21 @@ describe('Lexer', () => {
 
   it('tokenizes variables', () => {
     let result = tokenize('deflet aVar')
-    expect(result).toEqual([
-      Token.Var('deflet'),
-      Token.Var('aVar'),
-    ])
+    expect(result).toEqual([Token.Var('deflet'), Token.Var('aVar')])
   })
 
   it('tokenizes integers', () => {
     let result = tokenize('123 456')
-    expect(result).toEqual([
-      Token.Num(123),
-      Token.Num(456),
-    ])
+    expect(result).toEqual([Token.Num(123), Token.Num(456)])
   })
 
   it('tokenizes floats', () => {
     let result = tokenize('123.45 456.5')
-    expect(result).toEqual([
-      Token.Num(123.45),
-      Token.Num(456.5),
-    ])
+    expect(result).toEqual([Token.Num(123.45), Token.Num(456.5)])
   })
 
   it('tokenizes booleans', () => {
     let result = tokenize('True False')
-    expect(result).toEqual([
-      Token.Bool(true),
-      Token.Bool(false),
-    ])
+    expect(result).toEqual([Token.Bool(true), Token.Bool(false)])
   })
 })

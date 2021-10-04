@@ -1,5 +1,15 @@
-import { Token, TokenType } from "./Lexer";
-import { Apply, Binding, Bool, If, Lambda, Let, Var, Num, Expr } from "./Expr";
+import { Token, TokenType } from './Lexer'
+import {
+  Application,
+  Binding,
+  Bool,
+  If,
+  Lambda,
+  Let,
+  Var,
+  Num,
+  Expr,
+} from './Expr'
 
 class ParserError extends Error {}
 
@@ -18,16 +28,19 @@ class Parser {
 
   run(): Binding[] {
     const bindings: Binding[] = []
-    while(this.#current) {
+    while (this.#current) {
       switch (this.#current.type) {
         case Token.Def.type:
           this.#advance()
           bindings.push(this.#binding())
-          break;
-      
+          break
+
         default:
-          throw new ParserError(`[Parser.run] Unexpected token: ${JSON.stringify(this.#current)}`);
-          
+          throw new ParserError(
+            `[Parser.run] Unexpected token: ${JSON.stringify(
+              this.#current,
+            )}`,
+          )
       }
     }
     return bindings
@@ -62,7 +75,7 @@ class Parser {
 
       case TokenType.BackSlash:
         return this.#lambda()
-    
+
       default:
         return this.#application()
     }
@@ -81,7 +94,7 @@ class Parser {
     while (this.#current != null) {
       const index = this.#index
       try {
-        expr = new Apply(expr, this.#atom())
+        expr = new Application(expr, this.#atom())
       } catch (error) {
         if (error instanceof ParserError) {
           this.#index = index
@@ -90,8 +103,11 @@ class Parser {
         throw error
       }
     }
-    if (this.#current != null && this.#current.type === TokenType.BackSlash) {
-      expr = new Apply(expr, this.#lambda())
+    if (
+      this.#current != null &&
+      this.#current.type === TokenType.BackSlash
+    ) {
+      expr = new Application(expr, this.#lambda())
     }
     return expr
   }
@@ -103,7 +119,7 @@ class Parser {
         expr = new Var(this.#current.name)
         this.#advance()
         return expr
-    
+
       case TokenType.Num:
         expr = new Num(this.#current.value)
         this.#advance()
@@ -121,7 +137,11 @@ class Parser {
         return expr
 
       default:
-        throw new ParserError(`[Parser.atom] Expected atom but got: ${JSON.stringify(this.#current)}`);
+        throw new ParserError(
+          `[Parser.atom] Expected atom but got: ${JSON.stringify(
+            this.#current,
+          )}`,
+        )
     }
   }
 
@@ -131,7 +151,11 @@ class Parser {
       this.#advance()
       return name
     } else {
-      throw new ParserError(`[Parser.identifier] Expected identifier but got: ${JSON.stringify(this.#current)}`);
+      throw new ParserError(
+        `[Parser.identifier] Expected identifier but got: ${JSON.stringify(
+          this.#current,
+        )}`,
+      )
     }
   }
 
@@ -140,7 +164,9 @@ class Parser {
     if (this.#current.type === type) {
       this.#advance()
     } else {
-      throw new ParserError(`[Parser.expect] Expected ${type} but got: ${this.#current}`);
+      throw new ParserError(
+        `[Parser.expect] Expected ${type} but got: ${this.#current}`,
+      )
     }
   }
 

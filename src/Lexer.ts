@@ -30,9 +30,9 @@ export type Token =
   | { type: TokenType.If }
   | { type: TokenType.Then }
   | { type: TokenType.Else }
-  | { type: TokenType.Var, name: string }
-  | { type: TokenType.Num, value: number }
-  | { type: TokenType.Bool, value: boolean }
+  | { type: TokenType.Var; name: string }
+  | { type: TokenType.Num; value: number }
+  | { type: TokenType.Bool; value: boolean }
 
 export const Token = {
   // Operators
@@ -52,10 +52,12 @@ export const Token = {
   // Literals
   Var: (name: string) => ({ type: TokenType.Var, name } as const),
   Num: (value: number) => ({ type: TokenType.Num, value } as const),
-  Bool: (value: boolean) => ({ type: TokenType.Bool, value } as const),
+  Bool: (value: boolean) =>
+    ({ type: TokenType.Bool, value } as const),
 } as const
 
-const isAlpha = (c: string) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+const isAlpha = (c: string) =>
+  (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 const isDigit = (c: string) => c >= '0' && c <= '9'
 const isAlphaNum = (c: string) => isAlpha(c) || isDigit(c)
 
@@ -93,7 +95,7 @@ export function tokenize(source: string): Token[] {
       case '\t':
       case '\n':
         break
-    
+
       default:
         // Keywords or Variables
         if (isAlpha(source[index])) {
@@ -106,15 +108,12 @@ export function tokenize(source: string): Token[] {
           if (keywords.hasOwnProperty(word)) {
             tokens.push(keywords[word])
           } else {
-            if (word === 'True')
-              tokens.push(Token.Bool(true))
-            else if (word === 'False')
-              tokens.push(Token.Bool(false))
-            else
-              tokens.push(Token.Var(word))
+            if (word === 'True') tokens.push(Token.Bool(true))
+            else if (word === 'False') tokens.push(Token.Bool(false))
+            else tokens.push(Token.Var(word))
           }
 
-        // Number
+          // Number
         } else if (isDigit(source[index])) {
           let digits = [source[index]]
           while (isAlphaNum(source[index + 1])) {
@@ -122,9 +121,12 @@ export function tokenize(source: string): Token[] {
             digits.push(source[index])
           }
           // fractional part
-          if (source[index + 1] === '.' && isDigit(source[index + 2])) {
+          if (
+            source[index + 1] === '.' &&
+            isDigit(source[index + 2])
+          ) {
             digits.push(source[++index], source[++index])
-              while (isAlphaNum(source[index + 1])) {
+            while (isAlphaNum(source[index + 1])) {
               index += 1
               digits.push(source[index])
             }
@@ -132,9 +134,11 @@ export function tokenize(source: string): Token[] {
           let number = parseFloat(digits.join(''))
           tokens.push(Token.Num(number))
 
-        // Unexpected char
+          // Unexpected char
         } else {
-          throw new Error(`[tokenize] Unexpected character '${source[index]}'`);
+          throw new Error(
+            `[tokenize] Unexpected character '${source[index]}'`,
+          )
         }
     }
     index += 1
