@@ -1,5 +1,6 @@
 import { Token } from "./Lexer"
-import { Apply, Binding, Bool, If, Lambda, Let, Num, parse, Var } from "./Parser"
+import { parse } from "./Parser"
+import { Apply, Binding, Bool, If, Lambda, Let, Var, Num } from "./Expr";
 
 
 describe('Parser', () => {
