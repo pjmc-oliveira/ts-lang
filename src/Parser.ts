@@ -12,9 +12,6 @@ class Parser {
   get #current() {
     return this.#tokens[this.#index]
   }
-  get #peek() {
-    return this.#tokens[this.#index + 1]
-  }
   constructor(tokens: Token[]) {
     this.#tokens = tokens
   }
@@ -146,14 +143,6 @@ class Parser {
       throw new ParserError(`[Parser.expect] Expected ${type} but got: ${this.#current}`);
     }
   }
-
-  // #accept(type: TokenType): Token | null {
-  //   if (this.#current.type === type) {
-  //     return this.#advance()
-  //   } else {
-  //     return null
-  //   }
-  // }
 
   #advance(): Token {
     const token = this.#current
