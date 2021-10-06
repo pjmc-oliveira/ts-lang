@@ -1,13 +1,13 @@
 import { Token, TokenType } from './Lexer'
 import {
-  Application,
+  EApp,
   Binding,
-  Bool,
-  If,
-  Lambda,
-  Let,
-  Var,
-  Num,
+  EBool,
+  EIf,
+  ELam,
+  ELet,
+  EVar,
+  ENum,
   Expr,
 } from './Expr'
 
@@ -62,7 +62,7 @@ class Parser {
         const consequence = this.#expression()
         this.#expect(TokenType.Else)
         const alternative = this.#expression()
-        return new If(condition, consequence, alternative)
+        return new EIf(condition, consequence, alternative)
 
       case TokenType.Let:
         this.#advance()
@@ -71,7 +71,7 @@ class Parser {
         const value = this.#expression()
         this.#expect(TokenType.In)
         const letBody = this.#expression()
-        return new Let(name, value, letBody)
+        return new ELet(name, value, letBody)
 
       case TokenType.BackSlash:
         return this.#lambda()
@@ -85,7 +85,7 @@ class Parser {
     this.#expect(TokenType.BackSlash)
     const param = this.#identifier()
     const lamBody = this.#expression()
-    return new Lambda(param, lamBody)
+    return new ELam(param, lamBody)
   }
 
   #application(): Expr {
@@ -94,7 +94,7 @@ class Parser {
     while (this.#current != null) {
       const index = this.#index
       try {
-        expr = new Application(expr, this.#atom())
+        expr = new EApp(expr, this.#atom())
       } catch (error) {
         if (error instanceof ParserError) {
           this.#index = index
@@ -107,7 +107,7 @@ class Parser {
       this.#current != null &&
       this.#current.type === TokenType.BackSlash
     ) {
-      expr = new Application(expr, this.#lambda())
+      expr = new EApp(expr, this.#lambda())
     }
     return expr
   }
@@ -116,17 +116,17 @@ class Parser {
     let expr
     switch (this.#current.type) {
       case TokenType.Var:
-        expr = new Var(this.#current.name)
+        expr = new EVar(this.#current.name)
         this.#advance()
         return expr
 
       case TokenType.Num:
-        expr = new Num(this.#current.value)
+        expr = new ENum(this.#current.value)
         this.#advance()
         return expr
 
       case TokenType.Bool:
-        expr = new Bool(this.#current.value)
+        expr = new EBool(this.#current.value)
         this.#advance()
         return expr
 

@@ -1,36 +1,57 @@
-export interface Expr {}
-
 export class Binding {
   name: string
   expr: Expr
-  constructor(name : string, expr: Expr) {
+  constructor(name: string, expr: Expr) {
     this.name = name
     this.expr = expr
   }
 }
 
-export class Var implements Expr {
+export interface Expr {
+  accept<A>(visitor: ExprVisitor<A>): A
+}
+
+export interface ExprVisitor<A> {
+  var(_: EVar): A
+  num(_: ENum): A
+  bool(_: EBool): A
+  if(_: EIf): A
+  let(_: ELet): A
+  lambda(_: ELam): A
+  apply(_: EApp): A
+}
+
+export class EVar implements Expr {
   name: string
   constructor(name: string) {
     this.name = name
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.var(this)
+  }
 }
 
-export class Num implements Expr {
+export class ENum implements Expr {
   value: number
   constructor(value: number) {
     this.value = value
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.num(this)
+  }
 }
 
-export class Bool implements Expr {
+export class EBool implements Expr {
   value: boolean
   constructor(value: boolean) {
     this.value = value
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.bool(this)
+  }
 }
 
-export class If implements Expr {
+export class EIf implements Expr {
   condition: Expr
   consequence: Expr
   alternative: Expr
@@ -39,9 +60,12 @@ export class If implements Expr {
     this.consequence = consequence
     this.alternative = alternative
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.if(this)
+  }
 }
 
-export class Let implements Expr {
+export class ELet implements Expr {
   name: string
   value: Expr
   body: Expr
@@ -50,22 +74,31 @@ export class Let implements Expr {
     this.value = value
     this.body = body
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.let(this)
+  }
 }
 
-export class Lambda implements Expr {
+export class ELam implements Expr {
   param: string
   body: Expr
   constructor(param: string, body: Expr) {
     this.param = param
     this.body = body
   }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.lambda(this)
+  }
 }
 
-export class Apply implements Expr {
+export class EApp implements Expr {
   func: Expr
   argument: Expr
   constructor(func: Expr, argument: Expr) {
     this.func = func
     this.argument = argument
+  }
+  accept<A>(visitor: ExprVisitor<A>): A {
+    return visitor.apply(this)
   }
 }
