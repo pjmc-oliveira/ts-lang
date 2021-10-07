@@ -13,32 +13,46 @@ import {
 
 class ParserError extends Error {}
 
+class Tokens {
+  #tokens: Token[]
+  index: number = 0
+  constructor(tokens: Token[]) {
+    this.#tokens = tokens
+  }
+
+  get current() {
+    return this.#tokens[this.index]
+  }
+
+  advance(): Token {
+    const token = this.current
+    this.index += 1
+    return token
+  }
+}
+
 /**
  * Describes a program Parser
  */
-class Parser {
-  #tokens: Token[]
-  #index: number = 0
-  get #current() {
-    return this.#tokens[this.#index]
-  }
-  constructor(tokens: Token[]) {
+class BindingParser {
+  #tokens: Tokens
+  constructor(tokens: Tokens) {
     this.#tokens = tokens
   }
 
   run(): Binding[] {
     const bindings: Binding[] = []
-    while (this.#current) {
-      switch (this.#current.type) {
+    while (this.#tokens.current) {
+      switch (this.#tokens.current.type) {
         case Token.Def.type:
-          this.#advance()
+          this.#tokens.advance()
           bindings.push(this.#binding())
           break
 
         default:
           throw new ParserError(
-            `[Parser.run] Unexpected token: ${JSON.stringify(
-              this.#current,
+            `[BindingParser.run] Unexpected token: ${JSON.stringify(
+              this.#tokens.current,
             )}`,
           )
       }
@@ -54,9 +68,52 @@ class Parser {
   }
 
   #expression(): Expr {
-    switch (this.#current.type) {
+    const expressionP = new ExprParser(this.#tokens)
+    return expressionP.run()
+  }
+
+  #identifier(): string {
+    if (this.#tokens.current.type === TokenType.Var) {
+      const name = this.#tokens.current.name
+      this.#tokens.advance()
+      return name
+    } else {
+      throw new ParserError(
+        `[BindingParser.identifier] Expected identifier but got: ${JSON.stringify(
+          this.#tokens.current,
+        )}`,
+      )
+    }
+  }
+
+  // Utils
+  #expect(type: TokenType) {
+    if (this.#tokens.current.type === type) {
+      this.#tokens.advance()
+    } else {
+      throw new ParserError(
+        `[BindingParser.expect] Expected ${type} but got: ${
+          this.#tokens.current
+        }`,
+      )
+    }
+  }
+}
+
+class ExprParser {
+  #tokens: Tokens
+  constructor(tokens: Tokens) {
+    this.#tokens = tokens
+  }
+
+  run(): Expr {
+    return this.#expression()
+  }
+
+  #expression(): Expr {
+    switch (this.#tokens.current.type) {
       case TokenType.If:
-        this.#advance()
+        this.#tokens.advance()
         const condition = this.#expression()
         this.#expect(TokenType.Then)
         const consequence = this.#expression()
@@ -65,7 +122,7 @@ class Parser {
         return new EIf(condition, consequence, alternative)
 
       case TokenType.Let:
-        this.#advance()
+        this.#tokens.advance()
         const name = this.#identifier()
         this.#expect(TokenType.Equal)
         const value = this.#expression()
@@ -91,21 +148,21 @@ class Parser {
   #application(): Expr {
     // FIXME: There must be a better way than always throwing exceptions for this...
     let expr = this.#atom()
-    while (this.#current != null) {
-      const index = this.#index
+    while (this.#tokens.current != null) {
+      const index = this.#tokens.index
       try {
         expr = new EApp(expr, this.#atom())
       } catch (error) {
         if (error instanceof ParserError) {
-          this.#index = index
+          this.#tokens.index = index
           break
         }
         throw error
       }
     }
     if (
-      this.#current != null &&
-      this.#current.type === TokenType.BackSlash
+      this.#tokens.current != null &&
+      this.#tokens.current.type === TokenType.BackSlash
     ) {
       expr = new EApp(expr, this.#lambda())
     }
@@ -114,46 +171,46 @@ class Parser {
 
   #atom(): Expr {
     let expr
-    switch (this.#current.type) {
+    switch (this.#tokens.current.type) {
       case TokenType.Var:
-        expr = new EVar(this.#current.name)
-        this.#advance()
+        expr = new EVar(this.#tokens.current.name)
+        this.#tokens.advance()
         return expr
 
       case TokenType.Num:
-        expr = new ENum(this.#current.value)
-        this.#advance()
+        expr = new ENum(this.#tokens.current.value)
+        this.#tokens.advance()
         return expr
 
       case TokenType.Bool:
-        expr = new EBool(this.#current.value)
-        this.#advance()
+        expr = new EBool(this.#tokens.current.value)
+        this.#tokens.advance()
         return expr
 
       case TokenType.LeftParen:
-        this.#advance()
+        this.#tokens.advance()
         expr = this.#expression()
         this.#expect(TokenType.RightParen)
         return expr
 
       default:
         throw new ParserError(
-          `[Parser.atom] Expected atom but got: ${JSON.stringify(
-            this.#current,
+          `[ExprParser.atom] Expected atom but got: ${JSON.stringify(
+            this.#tokens.current,
           )}`,
         )
     }
   }
 
   #identifier(): string {
-    if (this.#current.type === TokenType.Var) {
-      const name = this.#current.name
-      this.#advance()
+    if (this.#tokens.current.type === TokenType.Var) {
+      const name = this.#tokens.current.name
+      this.#tokens.advance()
       return name
     } else {
       throw new ParserError(
-        `[Parser.identifier] Expected identifier but got: ${JSON.stringify(
-          this.#current,
+        `[ExprParser.identifier] Expected identifier but got: ${JSON.stringify(
+          this.#tokens.current,
         )}`,
       )
     }
@@ -161,23 +218,19 @@ class Parser {
 
   // Utils
   #expect(type: TokenType) {
-    if (this.#current.type === type) {
-      this.#advance()
+    if (this.#tokens.current.type === type) {
+      this.#tokens.advance()
     } else {
       throw new ParserError(
-        `[Parser.expect] Expected ${type} but got: ${this.#current}`,
+        `[ExprParser.expect] Expected ${type} but got: ${
+          this.#tokens.current
+        }`,
       )
     }
-  }
-
-  #advance(): Token {
-    const token = this.#current
-    this.#index += 1
-    return token
   }
 }
 
 export function parse(tokens: Token[]): Binding[] {
-  const parser = new Parser(tokens)
+  const parser = new BindingParser(new Tokens(tokens))
   return parser.run()
 }
