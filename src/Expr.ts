@@ -12,13 +12,13 @@ export interface Expr {
 }
 
 export interface ExprVisitor<A> {
-  var(_: EVar): A
-  num(_: ENum): A
-  bool(_: EBool): A
-  if(_: EIf): A
-  let(_: ELet): A
-  lambda(_: ELam): A
-  apply(_: EApp): A
+  var(expr: EVar): A
+  num(expr: ENum): A
+  bool(expr: EBool): A
+  if(expr: EIf): A
+  let(expr: ELet): A
+  lambda(expr: ELam): A
+  apply(expr: EApp): A
 }
 
 export class EVar implements Expr {
@@ -67,11 +67,11 @@ export class EIf implements Expr {
 
 export class ELet implements Expr {
   name: string
-  value: Expr
+  definition: Expr
   body: Expr
   constructor(name: string, value: Expr, body: Expr) {
     this.name = name
-    this.value = value
+    this.definition = value
     this.body = body
   }
   accept<A>(visitor: ExprVisitor<A>): A {

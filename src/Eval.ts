@@ -1,3 +1,4 @@
+import { Environment } from './Environment'
 import {
   ExprVisitor,
   Expr,
@@ -13,31 +14,9 @@ import {
 export class RuntimeError extends Error {}
 export class LookupError extends RuntimeError {}
 
-export class Environment {
-  #parent: Environment | undefined
-  #current: Map<string, Value> = new Map()
-  constructor(parent?: Environment) {
-    this.#parent = parent
-  }
-  lookup(name: string): Value {
-    let value = this.#current.get(name)
-    if (value != null) {
-      return value
-    } else if (this.#parent != null) {
-      return this.#parent.lookup(name)
-    }
-    throw new LookupError(
-      `LookupError: variable ${name} is not defined.`,
-    )
-  }
-  define(name: string, value: Value) {
-    this.#current.set(name, value)
-  }
-}
-
 class Evaluator implements ExprVisitor<Value> {
-  #environment: Environment
-  constructor(environment = new Environment()) {
+  #environment: Environment<Value>
+  constructor(environment: Environment<Value> = new Environment()) {
     this.#environment = environment
   }
   run(expr: Expr): Value {
@@ -63,7 +42,7 @@ class Evaluator implements ExprVisitor<Value> {
   }
   let(expr: ELet): Value {
     const local = new Environment(this.#environment)
-    local.define(expr.name, this.run(expr.value))
+    local.define(expr.name, this.run(expr.definition))
     const interpreter = new Evaluator(local)
     return interpreter.run(expr.body)
   }
@@ -102,13 +81,13 @@ export class VBool extends Value {
 }
 
 export class VFunction extends Value {
-  closure: Environment
+  closure: Environment<Value>
   parameter: string
   body: Expr
   constructor(
     parameter: string,
     body: Expr,
-    environment: Environment,
+    environment: Environment<Value>,
   ) {
     super()
     this.closure = environment
@@ -135,7 +114,7 @@ export class VNative extends Value {
 
 export function evaluate(
   expr: Expr,
-  environment?: Environment,
+  environment?: Environment<Value>,
 ): Value {
   const interpreter = new Evaluator(environment)
   return interpreter.run(expr)

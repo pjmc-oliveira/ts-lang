@@ -1,14 +1,15 @@
-import { Environment, evaluate, RuntimeError, Value } from './Eval'
+import { evaluate, RuntimeError, Value } from './Eval'
+import { Environment } from './Environment'
 import { Binding, Expr } from './Expr'
 
 export class DuplicateBindingError extends RuntimeError {}
 
 class Interpreter {
   #bindings: Map<string, Expr> = new Map()
-  #environment: Environment
+  #environment: Environment<Value>
   constructor(
     bindings: Binding[],
-    environment: Environment = new Environment(),
+    environment: Environment<Value> = new Environment(),
   ) {
     for (const binding of bindings) {
       if (this.#bindings.has(binding.name))
@@ -36,7 +37,7 @@ class Interpreter {
 
 export function interpret(
   program: Binding[],
-  environment?: Environment,
+  environment?: Environment<Value>,
 ): Value {
   const interpreter = new Interpreter(program, environment)
   return interpreter.run('main')
