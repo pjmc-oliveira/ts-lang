@@ -58,7 +58,7 @@ describe('Interpreter', () => {
   })
 
   it('accepts built-ins', () => {
-    const builtIns: Environment<Value> = new Environment()
+    const builtIns: Environment<string, Value> = new Environment()
     builtIns.define('x', new VNum(1))
     const program = parse(
       tokenize(`
@@ -69,7 +69,7 @@ describe('Interpreter', () => {
   })
 
   it('top-level bindings can be recursive', () => {
-    const builtIns: Environment<Value> = new Environment()
+    const builtIns: Environment<string, Value> = new Environment()
     builtIns.define(
       'eq0',
       new VNative(value => new VBool((value as VNum).value === 0)),
@@ -92,7 +92,7 @@ describe('Interpreter', () => {
   })
 
   it('top-level bindings can be mutually recursive', () => {
-    const builtIns: Environment<Value> = new Environment()
+    const builtIns: Environment<string, Value> = new Environment()
     builtIns.define(
       'le0',
       new VNative(value => new VBool((value as VNum).value <= 0)),
@@ -122,7 +122,7 @@ describe('Interpreter', () => {
   })
 
   it('can shadow globals variables', () => {
-    const builtIns: Environment<Value> = new Environment()
+    const builtIns: Environment<string, Value> = new Environment()
     builtIns.define('x', new VNum(1))
     const program = parse(
       tokenize(`

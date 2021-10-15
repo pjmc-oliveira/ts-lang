@@ -15,8 +15,10 @@ export class RuntimeError extends Error {}
 export class LookupError extends RuntimeError {}
 
 class Evaluator implements ExprVisitor<Value> {
-  #environment: Environment<Value>
-  constructor(environment: Environment<Value> = new Environment()) {
+  #environment: Environment<string, Value>
+  constructor(
+    environment: Environment<string, Value> = new Environment(),
+  ) {
     this.#environment = environment
   }
   run(expr: Expr): Value {
@@ -81,13 +83,13 @@ export class VBool extends Value {
 }
 
 export class VFunction extends Value {
-  closure: Environment<Value>
+  closure: Environment<string, Value>
   parameter: string
   body: Expr
   constructor(
     parameter: string,
     body: Expr,
-    environment: Environment<Value>,
+    environment: Environment<string, Value>,
   ) {
     super()
     this.closure = environment
@@ -114,7 +116,7 @@ export class VNative extends Value {
 
 export function evaluate(
   expr: Expr,
-  environment?: Environment<Value>,
+  environment?: Environment<string, Value>,
 ): Value {
   const interpreter = new Evaluator(environment)
   return interpreter.run(expr)

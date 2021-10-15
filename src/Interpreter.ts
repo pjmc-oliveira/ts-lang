@@ -6,10 +6,10 @@ export class DuplicateBindingError extends RuntimeError {}
 
 class Interpreter {
   #bindings: Map<string, Expr> = new Map()
-  #environment: Environment<Value>
+  #environment: Environment<string, Value>
   constructor(
     bindings: Binding[],
-    environment: Environment<Value> = new Environment(),
+    environment: Environment<string, Value> = new Environment(),
   ) {
     for (const binding of bindings) {
       if (this.#bindings.has(binding.name))
@@ -37,7 +37,7 @@ class Interpreter {
 
 export function interpret(
   program: Binding[],
-  environment?: Environment<Value>,
+  environment?: Environment<string, Value>,
 ): Value {
   const interpreter = new Interpreter(program, environment)
   return interpreter.run('main')

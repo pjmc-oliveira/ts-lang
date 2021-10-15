@@ -147,7 +147,7 @@ describe('Eval', () => {
 
   it('accepts a non-local environment', () => {
     // x
-    const global: Environment<Value> = new Environment()
+    const global: Environment<string, Value> = new Environment()
     global.define('x', new VNum(1))
     const expr = new EVar('x')
     expect(evaluate(expr, global)).toEqual(new VNum(1))
@@ -155,7 +155,7 @@ describe('Eval', () => {
 
   it('supports native functions', () => {
     // f 1
-    const global: Environment<Value> = new Environment()
+    const global: Environment<string, Value> = new Environment()
     global.define('f', new VNative(value => new VNum(1)))
     const expr = new EApp(new EVar('f'), new ENum(2))
     expect(evaluate(expr, global)).toEqual(new VNum(1))
