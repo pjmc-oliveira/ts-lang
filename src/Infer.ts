@@ -1,4 +1,3 @@
-import { Environment } from './Environment'
 import {
   EApp,
   EBool,
@@ -11,6 +10,96 @@ import {
   ExprVisitor,
 } from './Expr'
 
+/**
+ * Infers the type scheme of an expression
+ * @param expr The expression
+ * @param context The typing context
+ * @returns The type scheme
+ */
+export function infer(expr: Expr, context?: Context): Scheme {
+  TVar.count = 0 // FIXME: Find a better solution
+  const [type, subst] = Inferrer.run(expr, context)
+  return type.applyS(subst).toScheme().compact()
+}
+
+/**
+ * The type inference engine
+ */
+class Inferrer implements ExprVisitor<[Type, Subst]> {
+  #ctx: Context
+  constructor(ctx: Context) {
+    this.#ctx = ctx
+  }
+  static run(
+    expr: Expr,
+    ctx: Context = new Context(),
+  ): [Type, Subst] {
+    const inferrer = new Inferrer(ctx)
+    return expr.accept(inferrer)
+  }
+  var(expr: EVar): [Type, Subst] {
+    const scheme = this.#ctx.get(expr.name)
+    if (scheme == null)
+      throw new UnboundVar(`unbound variable '${expr.name}'`)
+    // TODO: Why get subst?
+    const [type, subst] = scheme.instantiate()
+    return [type, Subst.empty()]
+  }
+  num(expr: ENum): [Type, Subst] {
+    return [TNum, Subst.empty()]
+  }
+  bool(expr: EBool): [Type, Subst] {
+    return [TBool, Subst.empty()]
+  }
+  if(expr: EIf): [Type, Subst] {
+    // FIXME: Should do something with the new substitutions...
+    const [tCond, subst1] = Inferrer.run(expr.condition, this.#ctx)
+    if (tCond !== TBool)
+      throw new NonBoolCondition(`If condition cannot be: ${tCond}`)
+    const [tCon, subst2] = Inferrer.run(expr.consequence, this.#ctx)
+    const [tAlt, subst3] = Inferrer.run(expr.alternative, this.#ctx)
+    if (tCon !== tAlt)
+      throw new MismatchBranch('If branches must match types')
+    return [tCon, Subst.empty()]
+  }
+  let(expr: ELet): [Type, Subst] {
+    const [tDef, subst1] = Inferrer.run(expr.definition, this.#ctx)
+    const ctx1 = this.#ctx.remove(expr.name)
+    const scheme = ctx1.applyS(subst1).generalize(tDef)
+    const ctx2 = ctx1.insert(expr.name, scheme)
+    const [tBody, subst2] = Inferrer.run(
+      expr.body,
+      ctx2.applyS(subst1),
+    )
+    return [tBody, subst1.compose(subst2)]
+  }
+  lambda(expr: ELam): [Type, Subst] {
+    const tVar = TVar.fresh()
+    const ctx = this.#ctx.remove(expr.param)
+    const ctx2 = ctx.union(
+      new Context([[expr.param, new Scheme([], tVar)]]),
+    )
+    const [tBody, subst] = Inferrer.run(expr.body, ctx2)
+    const tArr = new TArr(tVar.applyS(subst), tBody)
+    return [tArr, subst]
+  }
+  apply(expr: EApp): [Type, Subst] {
+    const tResult = TVar.fresh()
+    const [tFunc, subst1] = Inferrer.run(expr.func, this.#ctx)
+    const [tArg, subst2] = Inferrer.run(
+      expr.argument,
+      this.#ctx.applyS(subst1),
+    )
+    const subst3 = tFunc.applyS(subst2).unify(new TArr(tArg, tResult))
+    return [
+      tResult.applyS(subst3),
+      subst3.compose(subst2).compose(subst1),
+    ]
+  }
+}
+
+// Utility function to find the set difference of 2 sets
+// returns the first set minus elements of the second set
 function setDiff<A>(first: Set<A>, second: Set<A>): Set<A> {
   return new Set([...first].filter(x => !second.has(x)))
 }
@@ -25,7 +114,9 @@ const doesNotUnify = (first: Type, second: Type) => {
   throw new CannotUnify(`UnificationError: ${first} vs. ${second}`)
 }
 
-// Extension
+/**
+ * Represents a substitution from bound variables to types
+ */
 class Subst extends Map<TVarId, Type> {
   static empty(): Subst {
     return new Subst()
@@ -43,6 +134,9 @@ class Subst extends Map<TVarId, Type> {
   }
 }
 
+/**
+ * Stores the type context, mapping variable names to type schemes
+ */
 export class Context
   extends Map<string, Scheme>
   implements Types<Context>
@@ -239,83 +333,3 @@ export class Scheme implements Types<Scheme> {
 
 export const TNum = new TCon('Num')
 export const TBool = new TCon('Bool')
-
-//
-class Inferrer implements ExprVisitor<[Type, Subst]> {
-  #ctx: Context
-  constructor(ctx: Context) {
-    this.#ctx = ctx
-  }
-  static run(
-    expr: Expr,
-    ctx: Context = new Context(),
-  ): [Type, Subst] {
-    const inferrer = new Inferrer(ctx)
-    return expr.accept(inferrer)
-  }
-  var(expr: EVar): [Type, Subst] {
-    const scheme = this.#ctx.get(expr.name)
-    if (scheme == null)
-      throw new UnboundVar(`unbound variable '${expr.name}'`)
-    // TODO: Why get subst?
-    const [type, subst] = scheme.instantiate()
-    return [type, Subst.empty()]
-  }
-  num(expr: ENum): [Type, Subst] {
-    return [TNum, Subst.empty()]
-  }
-  bool(expr: EBool): [Type, Subst] {
-    return [TBool, Subst.empty()]
-  }
-  if(expr: EIf): [Type, Subst] {
-    // FIXME: Should do something with the new substitutions...
-    const [tCond, subst1] = Inferrer.run(expr.condition, this.#ctx)
-    if (tCond !== TBool)
-      throw new NonBoolCondition(`If condition cannot be: ${tCond}`)
-    const [tCon, subst2] = Inferrer.run(expr.consequence, this.#ctx)
-    const [tAlt, subst3] = Inferrer.run(expr.alternative, this.#ctx)
-    if (tCon !== tAlt)
-      throw new MismatchBranch('If branches must match types')
-    return [tCon, Subst.empty()]
-  }
-  let(expr: ELet): [Type, Subst] {
-    const [tDef, subst1] = Inferrer.run(expr.definition, this.#ctx)
-    const ctx1 = this.#ctx.remove(expr.name)
-    const scheme = ctx1.applyS(subst1).generalize(tDef)
-    const ctx2 = ctx1.insert(expr.name, scheme)
-    const [tBody, subst2] = Inferrer.run(
-      expr.body,
-      ctx2.applyS(subst1),
-    )
-    return [tBody, subst1.compose(subst2)]
-  }
-  lambda(expr: ELam): [Type, Subst] {
-    const tVar = TVar.fresh()
-    const ctx = this.#ctx.remove(expr.param)
-    const ctx2 = ctx.union(
-      new Context([[expr.param, new Scheme([], tVar)]]),
-    )
-    const [tBody, subst] = Inferrer.run(expr.body, ctx2)
-    const tArr = new TArr(tVar.applyS(subst), tBody)
-    return [tArr, subst]
-  }
-  apply(expr: EApp): [Type, Subst] {
-    const tResult = TVar.fresh()
-    const [tFunc, subst1] = Inferrer.run(expr.func, this.#ctx)
-    const [tArg, subst2] = Inferrer.run(
-      expr.argument,
-      this.#ctx.applyS(subst1),
-    )
-    const subst3 = tFunc.applyS(subst2).unify(new TArr(tArg, tResult))
-    return [
-      tResult.applyS(subst3),
-      subst3.compose(subst2).compose(subst1),
-    ]
-  }
-}
-
-export function infer(expr: Expr, context?: Context): Scheme {
-  TVar.count = 0 // FIXME: Find a better solution
-  const [type, subst] = Inferrer.run(expr, context)
-  return type.applyS(subst).toScheme().compact()
-}

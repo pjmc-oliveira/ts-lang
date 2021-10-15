@@ -1,4 +1,3 @@
-import { LookupError } from './Eval'
 import { EApp, EBool, EIf, ELam, ELet, ENum, EVar } from './Expr'
 import {
   infer,
