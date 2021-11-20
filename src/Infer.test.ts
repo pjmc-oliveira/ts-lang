@@ -6,7 +6,6 @@ import {
   Scheme,
   TNum,
   TVar,
-  Type,
   Context,
   NonBoolCondition,
   MismatchBranch,
