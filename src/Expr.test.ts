@@ -1,4 +1,4 @@
-import { Binding, ENum, Program } from './Expr'
+import { Binding, DuplicateBindingError, ENum, Program } from './Expr'
 
 describe('Program', () => {
   it('should be created with no bindings', () => {
@@ -22,5 +22,18 @@ describe('Program', () => {
     expected.set('foo', new ENum(1))
     expected.set('bar', new ENum(2))
     expect(program.bindings).toEqual(expected)
+  })
+
+  it('cannot have duplicate bindings', () => {
+    const bindings = [
+      new Binding('foo', new ENum(1)),
+      new Binding('foo', new ENum(2)),
+    ]
+    const expected = new Map()
+    expected.set('foo', new ENum(1))
+    expected.set('bar', new ENum(2))
+    expect(() => new Program(bindings)).toThrowError(
+      DuplicateBindingError,
+    )
   })
 })

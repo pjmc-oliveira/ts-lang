@@ -9,11 +9,13 @@ import {
   ELet,
   EVar,
   ENum,
+  Program,
+  DuplicateBindingError,
 } from './Expr'
 
 describe('Parser', () => {
   it('parses an empty list', () => {
-    expect(parse([])).toEqual([])
+    expect(parse([])).toEqual(new Program([]))
   })
 
   it('parses two bindings', () => {
@@ -29,10 +31,12 @@ describe('Parser', () => {
       Token.Var('y'),
     ]
     const bindings = parse(tokens)
-    expect(bindings).toEqual([
-      new Binding('x', new EVar('x')),
-      new Binding('y', new EVar('y')),
-    ])
+    expect(bindings).toEqual(
+      new Program([
+        new Binding('x', new EVar('x')),
+        new Binding('y', new EVar('y')),
+      ]),
+    )
   })
 
   it('parses a variable expression', () => {
@@ -42,8 +46,8 @@ describe('Parser', () => {
       Token.Equal,
       Token.Var('x'),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(new EVar('x'))
   })
 
@@ -54,8 +58,8 @@ describe('Parser', () => {
       Token.Equal,
       Token.Num(123),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(new ENum(123))
   })
 
@@ -66,8 +70,8 @@ describe('Parser', () => {
       Token.Equal,
       Token.Bool(true),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(new EBool(true))
   })
 
@@ -78,8 +82,8 @@ describe('Parser', () => {
       Token.Equal,
       Token.Bool(false),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(new EBool(false))
   })
 
@@ -95,8 +99,8 @@ describe('Parser', () => {
       Token.Else,
       Token.Var('x'),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(
       new EIf(new EBool(true), new ENum(123), new EVar('x')),
     )
@@ -114,8 +118,8 @@ describe('Parser', () => {
       Token.In,
       Token.Num(123),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(
       new ELet('x', new EBool(true), new ENum(123)),
     )
@@ -130,8 +134,8 @@ describe('Parser', () => {
       Token.Var('x'),
       Token.Num(123),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('f')
     expect(expr).toEqual(new ELam('x', new ENum(123)))
   })
 
@@ -145,8 +149,8 @@ describe('Parser', () => {
       Token.Var('y'),
       Token.Var('z'),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(
       new EApp(
         new EApp(
@@ -168,8 +172,8 @@ describe('Parser', () => {
       Token.Var('x'),
       Token.Var('x'),
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(
       new EApp(new EVar('f'), new ELam('x', new EVar('x'))),
     )
@@ -186,10 +190,24 @@ describe('Parser', () => {
       Token.Var('x'),
       Token.RightParen,
     ]
-    const bindings = parse(tokens)
-    const expr = bindings[0].expr
+    const program = parse(tokens)
+    const expr = program.bindings.get('x')
     expect(expr).toEqual(
       new EApp(new EVar('f'), new EApp(new EVar('g'), new EVar('x'))),
     )
+  })
+
+  it('cannot have duplicate top-level bindings', () => {
+    const program = [
+      Token.Def,
+      Token.Var('x'),
+      Token.Equal,
+      Token.Bool(true),
+      Token.Def,
+      Token.Var('x'),
+      Token.Equal,
+      Token.Bool(false),
+    ]
+    expect(() => parse(program)).toThrowError(DuplicateBindingError)
   })
 })

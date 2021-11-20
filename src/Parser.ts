@@ -9,6 +9,7 @@ import {
   EVar,
   ENum,
   Expr,
+  Program,
 } from './Expr'
 
 /**
@@ -16,10 +17,11 @@ import {
  * @param tokens The tokens
  * @returns The bindings
  */
-export function parse(tokens: Token[]): Binding[] {
+export function parse(tokens: Token[]): Program {
   const result = many(binding).parse({ tokens, index: 0 })
   if (!result.ok) throw new ParserError(result.error)
-  return result.value
+  const program = new Program(result.value)
+  return program
 }
 
 /**

@@ -2,11 +2,17 @@ export class Program {
   bindings: Map<string, Expr> = new Map()
   constructor(bindings: Binding[] = []) {
     for (const binding of bindings) {
+      if (this.bindings.has(binding.name))
+        throw new DuplicateBindingError(
+          `Multiple definitions for '${binding.name}'`,
+        )
       this.bindings.set(binding.name, binding.expr)
-      // TODO: check for duplicate bindings
     }
   }
 }
+
+// TODO: extend an Error class specific to this language
+export class DuplicateBindingError extends Error {}
 
 export class Binding {
   name: string

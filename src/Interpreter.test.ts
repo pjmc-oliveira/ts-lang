@@ -1,6 +1,6 @@
 import { RuntimeError, Value, VBool, VNative, VNum } from './Eval'
 import { Environment } from './Environment'
-import { DuplicateBindingError, interpret } from './Interpreter'
+import { interpret } from './Interpreter'
 import { tokenize } from './Lexer'
 import { parse } from './Parser'
 
@@ -42,19 +42,6 @@ describe('Interpreter', () => {
     `),
     )
     expect(interpret(program)).toEqual(new VNum(1))
-  })
-
-  it('cannot have duplicate top-level bindings', () => {
-    const program = parse(
-      tokenize(`
-      def x = 1
-      def x = 2
-      def main = 1
-    `),
-    )
-    expect(() => interpret(program)).toThrowError(
-      DuplicateBindingError,
-    )
   })
 
   it('accepts built-ins', () => {
