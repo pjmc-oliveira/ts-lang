@@ -1,3 +1,13 @@
+export class Program {
+  bindings: Map<string, Expr> = new Map()
+  constructor(bindings: Binding[] = []) {
+    for (const binding of bindings) {
+      this.bindings.set(binding.name, binding.expr)
+      // TODO: check for duplicate bindings
+    }
+  }
+}
+
 export class Binding {
   name: string
   expr: Expr
